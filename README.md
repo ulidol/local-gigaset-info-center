@@ -4,7 +4,7 @@ This project allows to host your own mini-service for providing weather forecast
 
 This replacement is currently extremely limited and only provides weather forecast data for a single location that you can configure. Configuration is done server-side and not via the handset (as previously).
 
-This project is designed to run on ancient PHP5 because that is what my old trusty QNAP TS-109 Pro II is still on.
+This project is designed to run on Xampp 8.2.12  .
 
 Of course, it would be really easy to reimplement this in `node`, `python` or whatever else, you would prefer.
 
@@ -26,17 +26,14 @@ Go to the OpenWeatherMap [signup](https://home.openweathermap.org/users/sign_up)
 
 ## Second step: Set up the service
 
-Copy the contents of this repository to a directory served as `http://<yourserver>/info`. In my case, this would be `/Qweb/info/` on the NAS.
+Copy the contents of this repository to a directory served as `http://<yourserver>/info`. In my case, this would be `/opt/lampp/htdocs/info/` .
 
-To make your `apache` server run the provided scripts fine, add something like this to your `apache` configuration file, `/usr/local/apache/conf/apache.conf` in my case:
+To make your `apache` server run the provided scripts fine, add something like this to your `apache` configuration file, `/opt/lampp/etc/httpd.conf` in my case:
 
 ```apache
-<Directory "/share/Qweb/info">
+<Directory "/opt/lampp/htdocs/info">
     DirectoryIndex menu.jsp
-    Order deny,allow
-    Deny from all
-    Allow from localhost
-    Allow from 192.168.10.0/24
+
 	AddType application/x-httpd-php .jsp .do
 	SetEnv OPENWEATHERMAP_API_KEY <key from step 1 here>
 	SetEnv CITY "Berlin"
@@ -44,13 +41,13 @@ To make your `apache` server run the provided scripts fine, add something like t
 	SetEnv LONGITUDE 13.41053
 </Directory>
 ```
-
-Obviously, replace `192.168.10.0` with your local IP network and the `SetEnv` lines according to your situation.
+ the `SetEnv` lines according to your situation.
 
 Verify and activate your configuration:
 ```term
-# /usr/local/apache/bin/apachectl configtest
-# /usr/local/apache/bin/apachectl restart
+sudo xampp startapache
+sudo xampp stopapache
+
 ```
 
 Now, try and go to `http://<yourserver>/info`. You should see something like this:
