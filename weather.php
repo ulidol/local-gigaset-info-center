@@ -24,10 +24,10 @@
  * @param object $weather The weather object.
  * @return string The weather description.
  */
-function weather_type($weather)
+function weather_type(object $weather): string
 {
-  return $weather->description;
-};
+    return $weather->description;
+}
 
 /**
  * Summarizes the most frequent weather types.
@@ -37,12 +37,11 @@ function weather_type($weather)
  *
  * Limits to a maximum of 2 weather types.
  */
-function summarize_weather_types($weather_types)
+function summarize_weather_types(array $weather_types): array
 {
-  $weather_types = array_count_values($weather_types);
-  arsort($weather_types);
-  $weather_types = array_slice($weather_types, 0, 2);
-  return array_keys($weather_types);
+    $weather_types = array_count_values($weather_types);
+    arsort($weather_types);
+    return array_keys(array_slice($weather_types, 0, 2));
 }
 
 /**
@@ -53,19 +52,19 @@ function summarize_weather_types($weather_types)
  *
  * This function transforms to abbreviations when suitable.
  */
-function postprocess_weather_types($weather_types)
+function postprocess_weather_types(array $weather_types): array
 {
-  $result = array();
-  $tight = count($weather_types) > 1;
-  foreach ($weather_types as $weather_type) {
-    $weather_type = preg_replace('/([Üü]berw)iegend/', '$1.', $weather_type);
-    if ($tight) {
-      $weather_type = preg_replace('/(bew)ölkt/i', '$1.', $weather_type);
-      $weather_type = preg_replace('/(bed)eckt/i', '$1.', $weather_type);
+    $result = [];
+    $tight = count($weather_types) > 1;
+    foreach ($weather_types as $weather_type) {
+        $weather_type = preg_replace('/([Üü]berw)iegend/', '$1.', $weather_type);
+        if ($tight) {
+            $weather_type = preg_replace('/(bew)ölkt/i', '$1.', $weather_type);
+            $weather_type = preg_replace('/(bed)eckt/i', '$1.', $weather_type);
+        }
+        $result[] = $weather_type;
     }
-    $result[] = $weather_type;
-  }
-  return $result;
+    return $result;
 }
 
 /**
@@ -74,10 +73,10 @@ function postprocess_weather_types($weather_types)
  * @param int $dow The day of the week (0-6, where 0 represents Sunday).
  * @return string The weekday abbreviation.
  */
-function weekday($dow)
+function weekday(int $dow): string
 {
-  static $weekdays = array('So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa');
-  return $weekdays[$dow];
+    $weekdays = ['DOM', 'LUN', 'MAR', 'MER', 'GIOV', 'VEN', 'SAB'];
+    return $weekdays[$dow];
 }
 
 /**
@@ -89,21 +88,21 @@ function weekday($dow)
  * @return object The weather forecast data.
  * @throws Exception If there is an error retrieving the data.
  */
-function retrieve_weather($lat, $lon, $api_key)
+function retrieve_weather(float $lat, float $lon, string $api_key): object
 {
-  $url = "http://api.openweathermap.org/data/2.5/forecast?lat=$lat&lon=$lon&appid=$api_key&units=metric&lang=de";
-  $curl = curl_init($url);
-  curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
-  $result = curl_exec($curl);
-  if ($result === false) {
-    throw new Exception("Fehler beim Abrufen der Daten: " . curl_error($curl));
-  }
-  $result = json_decode($result);
+    $url = "http://api.openweathermap.org/data/2.5/forecast?lat=$lat&lon=$lon&appid=$api_key&units=metric&lang=it";
+    $curl = curl_init($url);
+    curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
+    $result = curl_exec($curl);
+    if ($result === false) {
+        throw new Exception("Error retrieving data: " . curl_error($curl));
+    }
+    $result = json_decode($result, false);
 
-  if ($result->cod != 200) {
-    throw new Exception("Fehler beim Abrufen der Daten: " . $result->message);
-  }
-  return $result;
+    if ($result->cod != 200) {
+        throw new Exception("Error retrieving data: " . $result->message);
+    }
+    return $result;
 }
 
 /**
@@ -112,50 +111,50 @@ function retrieve_weather($lat, $lon, $api_key)
  * @param object $forecast The weather forecast data.
  * @return array The aggregated daily weather data.
  */
-function aggregate_daily_weather($forecast)
+function aggregate_daily_weather(object $forecast): array
 {
-  $weatherData = array();
+    $weatherData = [];
 
-  // Iterate over each item in the "list" array
-  foreach ($forecast->list as $item) {
-    if ($item->sys->pod == "n")
-      continue;
+    // Iterate over each item in the "list" array
+    foreach ($forecast->list as $item) {
+        if ($item->sys->pod == "n")
+            continue;
 
-    $date = date('d.m.Y', $item->dt);
-    $dow = date('w', $item->dt);
-    $date = weekday($dow) . ", " . $date;
+        $date = date('d.m.Y', $item->dt);
+        $dow = date('w', $item->dt);
+        $date = weekday($dow) . ", " . $date;
 
-    // Check if the date already exists in the nested array
-    if (!isset($weatherData[$date])) {
-      // If not, initialize the nested array for the date
-      $weatherData[$date] = array(
-        'min_temp' => $item->main->temp_min,
-        'max_temp' => $item->main->temp_max,
-        'total_rain' => $item->rain->{"3h"},
-        'weather_types' => array_map('weather_type', $item->weather)
-      );
-    } else {
-      // If the date already exists, update the minimum and maximum temperature
-      $weatherData[$date]['min_temp'] = min($weatherData[$date]['min_temp'], $item->main->temp_min);
-      $weatherData[$date]['max_temp'] = max($weatherData[$date]['max_temp'], $item->main->temp_max);
-      // Update the total amount of rain
-      $weatherData[$date]['total_rain'] += $item->rain->{"3h"};
-      // Add the weather type to the array
-      $weatherData[$date]['weather_types'] = array_merge(
-        $weatherData[$date]['weather_types'],
-        array_map('weather_type', $item->weather)
-      );
+        // Check if the date already exists in the nested array
+        if (!isset($weatherData[$date])) {
+            // If not, initialize the nested array for the date
+            $weatherData[$date] = [
+                'min_temp' => $item->main->temp_min,
+                'max_temp' => $item->main->temp_max,
+                'total_rain' => $item->rain->{"3h"},
+                'weather_types' => array_map('weather_type', $item->weather)
+            ];
+        } else {
+            // If the date already exists, update the minimum and maximum temperature
+            $weatherData[$date]['min_temp'] = min($weatherData[$date]['min_temp'], $item->main->temp_min);
+            $weatherData[$date]['max_temp'] = max($weatherData[$date]['max_temp'], $item->main->temp_max);
+            // Update the total amount of rain
+            $weatherData[$date]['total_rain'] += $item->rain->{"3h"};
+            // Add the weather type to the array
+            $weatherData[$date]['weather_types'] = array_merge(
+                $weatherData[$date]['weather_types'],
+                array_map('weather_type', $item->weather)
+            );
+        }
     }
-  }
 
-  // Summarize the weather types for each date
-  foreach ($weatherData as $date => $data) {
-    $weatherData[$date]['weather_types']
-      = postprocess_weather_types(
-        summarize_weather_types(
-          $data['weather_types']
-        )
-      );
-  }
-  return $weatherData;
+    // Summarize the weather types for each date
+    foreach ($weatherData as $date => $data) {
+        $weatherData[$date]['weather_types']
+            = postprocess_weather_types(
+                summarize_weather_types(
+                    $data['weather_types']
+                )
+            );
+    }
+    return $weatherData;
 }
