@@ -1,4 +1,4 @@
-<?php echo '<?xml version="1.0" encoding="utf-8"?>' ?>
+<<?php echo '<?xml version="1.0" encoding="utf-8"?>' ?>
 
 <!DOCTYPE html PUBLIC "-//OPENWAVE//DTD XHTML Mobile 1.0//EN" "http://www.openwave.com/dtd/xhtml-mobile10.dtd">
 <html>
@@ -33,7 +33,7 @@ $api_key = getenv('OPENWEATHERMAP_API_KEY');
 ?>
 
 <head>
-  <title><?php echo $city; ?></title>
+  <title><?php echo htmlspecialchars($city); ?></title>
 </head>
 
 <body>
@@ -49,15 +49,15 @@ $api_key = getenv('OPENWEATHERMAP_API_KEY');
       $totalRain = $data['total_rain'];
       $weatherTypes = $data['weather_types'];
 
-      echo "<p style='text-align:center'>$date<br/>";
+      echo "<p style='text-align:center'>" . htmlspecialchars($date) . "<br/>";
       echo str_replace('.', ',',
-          sprintf('%.1f/%.1f°C/%.0f mm', $minTemp, $maxTemp, $totalRain)),
-        "<br/>";
-      echo implode('/', $weatherTypes) . "</p>";
+          sprintf('%.1f/%.1f°C/%.0f mm', $minTemp, $maxTemp, $totalRain)) . "<br/>";
+      echo implode('/', array_map('htmlspecialchars', $weatherTypes)) . "</p>";
     }
   } catch (Exception $e) {
-    echo "<p style='text-align:center'><b>Error:</b> " . $e->getMessage() . "</p>";
+    echo "<p style='text-align:center'><b>Error:</b> " . htmlspecialchars($e->getMessage()) . "</p>";
   }
   ?>
 </body>
 </html>
+
